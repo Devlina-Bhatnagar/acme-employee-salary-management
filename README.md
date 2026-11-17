@@ -6,7 +6,7 @@ A working, AI-assisted salary-management assessment submission for HR teams mana
 ## What it does
 
 - Sign in as the HR administrator. All salary APIs, reports and CSV downloads require a bearer token.
-- Browse 10,000 synthetic employees with server-side search, filters, sorting and pagination (20 rows/page).
+- Browse 10,000 synthetic employees with server-side search, filters, sorting and pagination (20 rows/page); salary ordering requires one country.
 - Add/edit/deactivate employees. View initial salary and append salary changes with effective date, explanation and HR identity.
 - Explore country + department salary breakdowns, headcount, averages, min/max, and salary distribution. Amounts are in integer minor units in the database and **never mixed across currencies**.
 - Import a strict CSV with prevalidation + atomic commit, or export filtered rows. Import is **create only**, not an overwrite of salary history.
@@ -50,7 +50,7 @@ PowerShell environment variables use `$env:JWT_SECRET='...'` and similar. `backe
 
 ```bash
 cd backend
-python -m pytest -q
+python -m pytest -q --cov=app --cov-report=term-missing
 # UI build check, when Node + npm dependencies are available:
 cd ../web
 npm install
@@ -58,7 +58,7 @@ npm run build
 node --check app.js
 ```
 
-The API suite covers auth and unauthorized requests, duplicate IDs/emails, filters and sorting, money precision, salary history, date checks, inactive employees, CSV atomicity, salary-by-currency reporting, and more. GitHub Actions runs these tests on push/PR.
+The 16-test API suite covers auth and unauthorized requests, duplicate IDs/emails, filters and sorting, money precision, salary history, date checks, inactive employees, CSV atomicity, salary-by-currency reporting, deterministic 10,000-row seeding and more. The suite achieved **93% statement coverage** in the local assessment environment. GitHub Actions runs tests on push/PR.
 
 ## Project layout
 
@@ -88,7 +88,7 @@ This environment had no access to the npm registry. To keep the deliverable **ru
 
 ## Verification & scope limitations
 
-This repository contains functioning backend/API code, 10,000-data seeder, automated tests, a complete React UI with checked-in browser JavaScript, and a working Docker specification. The app has been exercised in a local Python environment and API tests are runnable. A **public hosting URL, GitHub push and human screen-recorded video are not included**—they require the candidate's external accounts and browser/recording environment. Use [`docs/DEMO.md`](docs/DEMO.md) as the video walkthrough script and commit your demo video or its link when recorded.
+This repository contains functioning backend/API code, 10,000-data seeder, automated tests, a complete React UI with checked-in browser JavaScript, and a working Docker specification. The API has been exercised over live local HTTP, its browser assets return successfully, and tests are runnable. Browser rendering and interaction could not be verified in the restricted assessment build environment, so run the documented UI walkthrough on your own machine before submission. A **public hosting URL, GitHub push and human screen-recorded video are not included**—they require the candidate's external accounts and browser/recording environment. Use [`docs/DEMO.md`](docs/DEMO.md) as the video walkthrough script and commit your demo video or its link when recorded.
 
 ## Submitted design artifacts
 
@@ -97,5 +97,6 @@ This repository contains functioning backend/API code, 10,000-data seeder, autom
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — architecture, scale, privacy and exclusions
 - [`docs/AI_USAGE.md`](docs/AI_USAGE.md) — AI prompts and verification approach
 - [`docs/DEMO.md`](docs/DEMO.md) — video demonstration plan
+- [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) — live 10k-row sample timings and limitations
 
 See `git log --oneline --reverse` for incremental design, API, UI, tests and packaging commits.
