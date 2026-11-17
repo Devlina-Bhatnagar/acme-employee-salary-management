@@ -1,0 +1,9 @@
+.git
+**/__pycache__
+**/.pytest_cache
+**/.env
+**/*.db
+**/node_modules
+backend/tests
+*.mp4
+*.zip

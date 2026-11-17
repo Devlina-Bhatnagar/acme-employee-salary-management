@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: sqlite:////data/acme.db
+      SEED_DEMO: "true"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - acme-data:/data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  acme-data:

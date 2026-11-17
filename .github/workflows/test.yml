@@ -1,0 +1,32 @@
+name: Automated tests
+on:
+  push:
+  pull_request:
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r backend/requirements-dev.txt
+      - name: API, domain and seed tests
+        working-directory: backend
+        run: python -m pytest -q
+  ui-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate checked-in browser code
+        run: node --check web/app.js
+      - name: Compile JSX and detect uncommitted generated changes
+        working-directory: web
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+          git diff --exit-code -- app.js
