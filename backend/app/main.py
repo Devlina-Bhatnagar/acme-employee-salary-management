@@ -105,6 +105,8 @@ def create_app(db_url: str | None = None, *, testing: bool = False) -> FastAPI:
         sort: str = Query("name", pattern="^(name|salary_asc|salary_desc|updated)$"),
         db: Session = Depends(get_db), user: User = Depends(current_user),
     ):
+        if sort.startswith("salary_") and not country:
+            raise HTTPException(422, "Select a country before sorting local-currency salaries")
         status_value = None if status == "all" else status
         filtered = filters_for(select(Employee), country=country, department=department, status=status_value, search=search)
         total = db.scalar(select(func.count()).select_from(filtered.order_by(None).subquery())) or 0

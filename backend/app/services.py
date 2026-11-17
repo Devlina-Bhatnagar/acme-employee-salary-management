@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import and_, func, or_, select
@@ -36,8 +36,9 @@ def filters_for(query, *, country: str | None, department: str | None, status: s
     if status:
         query = query.where(Employee.status == status)
     if search:
-        term = f"%{search.strip().lower()}%"
-        query = query.where(or_(func.lower(Employee.employee_code).like(term), func.lower(Employee.full_name).like(term), func.lower(Employee.email).like(term)))
+        escaped = search.strip().lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        term = f"%{escaped}%"
+        query = query.where(or_(func.lower(Employee.employee_code).like(term, escape="\\"), func.lower(Employee.full_name).like(term, escape="\\"), func.lower(Employee.email).like(term, escape="\\")))
     return query
 
 
@@ -61,7 +62,7 @@ def create_employee(db: Session, payload: EmployeeCreate, actor: User | None, *,
             old_salary_minor=None,
             new_salary_minor=employee.current_salary_minor,
             currency=employee.currency,
-            effective_on=date.today(),
+            effective_on=datetime.now(timezone.utc).date(),
             reason=reason,
             changed_by_user_id=actor.id if actor else None,
         ))

@@ -3,7 +3,7 @@
 const COUNTRY_NAMES = { US: 'United States', IN: 'India', GB: 'United Kingdom', DE: 'Germany', CA: 'Canada' };
 const COUNTRY_CURRENCY = { US: 'USD', IN: 'INR', GB: 'GBP', DE: 'EUR', CA: 'CAD' };
 const DEPARTMENTS = ['Engineering', 'Product', 'Sales', 'Marketing', 'Finance', 'People', 'Operations', 'Support'];
-const TODAY = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+const TODAY = new Date().toISOString().slice(0, 10); // Business-effective calendar date (UTC)
 const emptyEmployee = () => ({ employee_code: '', full_name: '', email: '', country: 'US', department: 'Engineering', job_title: '', currency: 'USD', annual_salary: '' });
 const money = (minor, currency) => {
     if (minor == null)
@@ -132,7 +132,8 @@ class App extends React.Component {
         }
     }
     filter(field, value, debounce = false) {
-        this.setState({ [field]: value, page: 1 }, () => {
+        const resetSort = field === 'filterCountry' && !value && this.state.sort.startsWith('salary_');
+        this.setState({ [field]: value, page: 1, ...(resetSort ? { sort: 'name' } : {}) }, () => {
             if (field === 'filterCountry' || field === 'filterDepartment')
                 this.loadReport();
             clearTimeout(this.searchDelay);
@@ -522,8 +523,8 @@ class App extends React.Component {
                         "Sort by",
                         React.createElement("select", { "aria-label": "Sort employees", value: this.state.sort, onChange: e => this.filter('sort', e.target.value) },
                             React.createElement("option", { value: "name" }, "Name A\u2013Z"),
-                            React.createElement("option", { value: "salary_asc" }, "Salary low\u2013high"),
-                            React.createElement("option", { value: "salary_desc" }, "Salary high\u2013low"),
+                            React.createElement("option", { value: "salary_asc", disabled: !this.state.filterCountry }, "Salary low\u2013high (select country)"),
+                            React.createElement("option", { value: "salary_desc", disabled: !this.state.filterCountry }, "Salary high\u2013low (select country)"),
                             React.createElement("option", { value: "updated" }, "Recently updated")))),
                 React.createElement("div", { className: "table-wrap" },
                     React.createElement("table", null,
@@ -688,7 +689,7 @@ class App extends React.Component {
                             " \u2022 Current: ",
                             moneyExact(selected.current_salary_minor, selected.currency)),
                         this.textInput(`New annual base salary (${selected.currency})`, salaryForm.annual_salary, e => this.setState({ salaryForm: { ...salaryForm, annual_salary: e.target.value } }), { type: 'number', min: '0.01', max: '999999999.99', step: '0.01', required: true }),
-                        this.textInput('Effective date', salaryForm.effective_on, e => this.setState({ salaryForm: { ...salaryForm, effective_on: e.target.value } }), { type: 'date', max: TODAY, required: true }),
+                        this.textInput('Effective date (UTC)', salaryForm.effective_on, e => this.setState({ salaryForm: { ...salaryForm, effective_on: e.target.value } }), { type: 'date', max: TODAY, required: true }),
                         React.createElement("label", { className: "form-field" },
                             "Reason for salary change",
                             React.createElement("textarea", { minLength: "5", maxLength: "500", required: true, rows: "4", value: salaryForm.reason, placeholder: "e.g. Annual compensation review", onChange: e => this.setState({ salaryForm: { ...salaryForm, reason: e.target.value } }) })),

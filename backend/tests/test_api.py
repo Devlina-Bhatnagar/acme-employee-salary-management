@@ -41,8 +41,9 @@ def test_create_search_filter_pagination_and_sort(client, auth_headers, sample_e
     page = client.get("/api/employees?page=2&page_size=1&sort=name", headers=auth_headers).json()
     assert page["total"] == 2 and page["pages"] == 2
     assert page["items"][0]["full_name"] == "Zoe Lee"
-    sorted_rows = client.get("/api/employees?sort=salary_asc", headers=auth_headers).json()["items"]
-    assert [item["employee_code"] for item in sorted_rows] == ["B-200", "A-100"]
+    assert client.get("/api/employees?sort=salary_asc", headers=auth_headers).status_code == 422
+    sorted_rows = client.get("/api/employees?country=US&sort=salary_asc", headers=auth_headers).json()["items"]
+    assert [item["employee_code"] for item in sorted_rows] == ["A-100"]
     assert client.get("/api/employees?page_size=1000", headers=auth_headers).status_code == 422
 
 
@@ -90,7 +91,8 @@ def test_profile_edit_audited_and_country_immutable(client, auth_headers, sample
     response = client.patch(f"/api/employees/{employee['id']}", headers=auth_headers, json={"department": "Product", "job_title": "Senior PM"})
     assert response.status_code == 200
     assert response.json()["department"] == "Product"
-    # The API intentionally does not expose country/currency patching.
+    # The API rejects country/currency patching rather than silently ignoring it.
+    assert client.patch(f"/api/employees/{employee['id']}", headers=auth_headers, json={"country": "DE"}).status_code == 422
     assert client.patch(f"/api/employees/{employee['id']}", headers=auth_headers, json={"email": "alex2@example.invalid"}).status_code == 200
     with app.state.session_maker() as db:
         actions = list(db.query(AuditEvent).filter_by(employee_id=employee["id"]).order_by(AuditEvent.id))
@@ -158,3 +160,15 @@ def test_metadata_authenticated(client, auth_headers):
 def test_money_precision():
     assert to_minor("0.01") == 1
     assert to_minor("999999999.99") == 99999999999
+
+
+def test_literal_search_special_chars(client, auth_headers, sample_employee):
+    create(client, auth_headers, sample_employee)
+    assert client.get('/api/employees?search=%25', headers=auth_headers).json()['total'] == 0
+    assert client.get('/api/employees?search=_', headers=auth_headers).json()['total'] == 0
+
+
+def test_export_escapes_spreadsheet_formula_prefix(client, auth_headers, sample_employee):
+    create(client, auth_headers, {**sample_employee, 'full_name': '-SUM(1,1)'})
+    text = client.get('/api/employees/export', headers=auth_headers).text
+    assert "'-SUM(1,1)" in text

@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 import io
 from decimal import Decimal
-from datetime import date
+from datetime import date, datetime, timezone
 
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -81,7 +81,7 @@ def import_csv(db: Session, raw: bytes, actor: User) -> dict[str, int]:
             employee = Employee(employee_code=item.employee_code, full_name=item.full_name, email=item.email, country=item.country, department=item.department, job_title=item.job_title, currency=item.currency, current_salary_minor=to_minor(item.annual_salary), status="active")
             db.add(employee)
             db.flush()
-            db.add(SalaryRevision(employee_id=employee.id, old_salary_minor=None, new_salary_minor=employee.current_salary_minor, currency=employee.currency, effective_on=date.today(), reason="Initial salary (CSV import)", changed_by_user_id=actor.id))
+            db.add(SalaryRevision(employee_id=employee.id, old_salary_minor=None, new_salary_minor=employee.current_salary_minor, currency=employee.currency, effective_on=datetime.now(timezone.utc).date(), reason="Initial salary (CSV import)", changed_by_user_id=actor.id))
         db.commit()
     except IntegrityError as exc:
         db.rollback()

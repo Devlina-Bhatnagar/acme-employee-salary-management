@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Literal
 
@@ -31,6 +31,8 @@ def normalize_email(value: str) -> str:
 
 
 class EmployeeCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     employee_code: str = Field(min_length=3, max_length=32)
     full_name: str = Field(min_length=2, max_length=120)
     email: str
@@ -77,6 +79,8 @@ class EmployeeCreate(BaseModel):
 
 
 class EmployeePatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     full_name: str | None = Field(default=None, min_length=2, max_length=120)
     email: str | None = None
     department: str | None = Field(default=None, min_length=2, max_length=80)
@@ -100,6 +104,8 @@ class EmployeePatch(BaseModel):
 
 
 class SalaryChange(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     annual_salary: Decimal
     effective_on: date
     reason: str = Field(min_length=5, max_length=500)
@@ -115,7 +121,7 @@ class SalaryChange(BaseModel):
     @model_validator(mode="after")
     def valid(self):
         to_minor(self.annual_salary)
-        if self.effective_on > date.today():
+        if self.effective_on > datetime.now(timezone.utc).date():
             raise ValueError("Future-dated salary changes are not part of v1")
         return self
 
