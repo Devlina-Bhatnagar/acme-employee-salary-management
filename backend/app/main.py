@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import os
-from contextlib import asynccontextmanager
-from datetime import date
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -53,6 +50,17 @@ def create_app(db_url: str | None = None, *, testing: bool = False) -> FastAPI:
     app.state.session_maker = session_maker
     app.state.jwt_secret = secret
     app.state.engine = engine
+
+    @app.middleware("http")
+    async def add_security_headers(request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+        if request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
     admin_email = os.environ.get("HR_ADMIN_EMAIL", "").strip().lower()
     admin_password = os.environ.get("HR_ADMIN_PASSWORD", "")
@@ -148,6 +156,9 @@ def create_app(db_url: str | None = None, *, testing: bool = False) -> FastAPI:
         @app.get("/", response_class=HTMLResponse, include_in_schema=False)
         def frontend():
             return (web_path / "index.html").read_text()
+        @app.get("/import-template.csv", include_in_schema=False)
+        def import_template():
+            return Response(content=(web_path.parent / "docs" / "import-template.csv").read_bytes(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=acme-import-template.csv"})
         @app.get("/app.js", include_in_schema=False)
         def app_js():
             return Response(content=(web_path / "app.js").read_bytes(), media_type="application/javascript")

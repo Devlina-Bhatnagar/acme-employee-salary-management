@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+from decimal import Decimal
 from datetime import date
 
 from fastapi import HTTPException
@@ -30,7 +31,7 @@ def export_csv(db: Session, country: str | None, department: str | None, status:
     writer.writerow(FIELDS + ["status"])
     query = filters_for(select(Employee), country=country, department=department, status=status, search=search).order_by(Employee.employee_code)
     for e in db.scalars(query):
-        writer.writerow([escape_excel(e.employee_code), escape_excel(e.full_name), escape_excel(e.email), e.country, escape_excel(e.department), escape_excel(e.job_title), f"{e.current_salary_minor / 100:.2f}", e.currency, e.status])
+        writer.writerow([escape_excel(e.employee_code), escape_excel(e.full_name), escape_excel(e.email), e.country, escape_excel(e.department), escape_excel(e.job_title), f"{Decimal(e.current_salary_minor) / 100:.2f}", e.currency, e.status])
     return "\ufeff" + output.getvalue()
 
 

@@ -1,0 +1,8 @@
+{
+  "name": "acme-salary-manager-ui",
+  "private": true,
+  "version": "1.0.0",
+  "description": "React browser client; compiled app.js is checked in so runtime does not require Node",
+  "scripts": {"build": "node build.cjs"},
+  "devDependencies": {"typescript": "5.8.3"}
+}
